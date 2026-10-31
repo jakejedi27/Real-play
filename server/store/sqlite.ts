@@ -900,7 +900,7 @@ function friendshipRow(f: FriendshipRecord) {
   };
 }
 
-function mapFriendship(row: Row):友谊 | FriendshipRecord {
+function mapFriendship(row: Row): FriendshipRecord {
   return {
     id: row.id as string,
     requesterId: row.requester_id as string,
