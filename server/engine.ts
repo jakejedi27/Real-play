@@ -277,25 +277,26 @@ export function tick(game: GameRecord, players: PlayerRecord[], locations: Locat
       tickTerritory(game, players, locations, now, result);
       break;
     case 'scavenger':
-      tickScavenger(game, players, now, result);
+      tickScavenger(game, players, locations, now, result);
       break;
   }
 
   if (!result.finished) {
     const timerEnd = (game.startedAt ?? now) + game.durationMs;
     if (now >= timerEnd) {
-      applyExpiry(game, now, result);
+      applyExpiry(game, players, now, result);
     }
   }
   if (result.changed) game.updatedAt = now;
   return result;
 }
 
-function applyExpiry(game: GameRecord, now: number, result: EngineResult): void {
+function applyExpiry(game: GameRecord, players: PlayerRecord[], now: number, result: EngineResult): void {
   const settings = game.settings;
   if (settings.mode === 'manhunt') {
     const s = settings;
-    const runnersAlive = playersInTeam(game, 'runners').filter((p) => !game.runtime.players[p.id]?.eliminated);
+    const runnerTeam = manhuntRoles(game).runners;
+    const runnersAlive = players.filter((p) => p.teamKey === runnerTeam && !game.runtime.players[p.id]?.eliminated);
     if (runnersAlive.length > 0) {
       result.finished = { key: 'runners', label: 'Runners', reason: 'At least one runner survived until the end of the match.' };
     } else if (s.tieRule === 'hunters') {
