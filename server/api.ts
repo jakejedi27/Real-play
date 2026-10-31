@@ -7,7 +7,7 @@ import path from 'node:path';
 import { GameService, ServiceError } from './service';
 import type { Store } from './store';
 import type { GameSummary, ModeId } from '../shared/types';
-import { MODE_IDS } from '../shared/modes';
+import { MODE_LIST } from '../shared/modes';
 
 export interface ApiOptions {
   service: GameService;
@@ -39,7 +39,7 @@ async function readJson(c: {
   }
 }
 
-const SUMMARY_MODES = new Set<string>(MODE_IDS);
+const SUMMARY_MODES = new Set<string>(MODE_LIST.map((mode) => mode.id));
 
 function summarize(record: {
   id: string;
