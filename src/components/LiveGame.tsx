@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GameSnapshot, ModeSettings, TeamConfig } from '@shared/types';
+import type { GameSnapshot, ModeSettings } from '@shared/types';
 import { MODE_META } from '@shared/modes';
 import { distanceMeters } from '@shared/geo';
 import { useGameSession } from '../lib/GameSession';
@@ -29,7 +29,8 @@ function useServerClock(serverNow: number): number {
 export function LiveGame({ snapshot }: { snapshot: GameSnapshot }) {
   const session = useGameSession();
   const settings = settingsOf(snapshot);
-  const teams: TeamConfig[] = settings.teams;
+  const token = session.session?.token ?? null;
+  const teams = snapshot.teams;
   const meta = MODE_META[snapshot.game.mode];
   const you = snapshot.you;
   const [recenterKey, setRecenterKey] = useState(0);
@@ -43,7 +44,7 @@ export function LiveGame({ snapshot }: { snapshot: GameSnapshot }) {
 
   const uplink = useLocationUplink({
     gameId: snapshot.game.id,
-    token: session.token,
+    token,
     enabled: !paused && you.consentLocation,
     minIntervalSeconds: settings.locationUpdateSeconds,
     staleAfterSeconds: settings.staleAfterSeconds,
@@ -131,7 +132,7 @@ export function LiveGame({ snapshot }: { snapshot: GameSnapshot }) {
   }
 
   const rings: MapRing[] = [];
-  if (settings.zones) {
+  if (settings.mode === 'territory') {
     for (const zone of snapshot.zones ?? []) {
       rings.push({
         id: `zone-ring-${zone.id}`,
@@ -321,11 +322,7 @@ export function LiveGame({ snapshot }: { snapshot: GameSnapshot }) {
             center={center}
             zoom={center ? 17 : 3}
             accuracyMeters={fix?.accuracyMeters ?? null}
-            area={
-              settings.area.enabled && settings.area.center
-                ? { center: settings.area.center, radiusMeters: settings.area.radiusMeters }
-                : null
-            }
+            area={settings.area}
             pins={pins}
             rings={rings}
             recenterKey={recenterKey}

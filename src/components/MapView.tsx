@@ -63,7 +63,7 @@ export function MapView({
   interactive = true,
   className = 'map',
 }: {
-  center: LatLng;
+  center: LatLng | null;
   zoom?: number;
   accuracyMeters?: number | null;
   area?: PlayArea | null;
@@ -73,11 +73,14 @@ export function MapView({
   interactive?: boolean;
   className?: string;
 }) {
+  const mapCenter: [number, number] = center ? [center.lat, center.lng] : [20, 0];
+  const mapZoom = zoom ?? (center ? 16 : 2);
+
   return (
     <div className={className}>
       <MapContainer
-        center={[center.lat, center.lng]}
-        zoom={zoom}
+        center={mapCenter}
+        zoom={mapZoom}
         scrollWheelZoom={false}
         dragging={interactive}
         touchZoom={interactive}
@@ -87,7 +90,7 @@ export function MapView({
         style={{ width: '100%', height: '100%' }}
       >
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
-        <Recenter center={center} recenterKey={recenterKey} zoom={zoom} />
+        {center ? <Recenter center={center} recenterKey={recenterKey} zoom={mapZoom} /> : null}
 
         {area?.enabled && area.center ? (
           <Circle
@@ -99,7 +102,7 @@ export function MapView({
           </Circle>
         ) : null}
 
-        {typeof accuracyMeters === 'number' && accuracyMeters > 0 ? (
+        {center && typeof accuracyMeters === 'number' && accuracyMeters > 0 ? (
           <Circle
             center={[center.lat, center.lng]}
             radius={Math.min(accuracyMeters, 500)}

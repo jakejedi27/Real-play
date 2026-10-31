@@ -25,7 +25,7 @@ export function Results({ snapshot }: { snapshot: GameSnapshot }) {
         <h1>{snapshot.game.name}</h1>
         <p className="muted">
           {meta.name} · {results?.reason ? RESULTS_LABEL[results.reason] ?? results.reason : 'Finished'} ·{' '}
-          {results?.endedAt ? dateTimeText(results.endedAt) : clockTime(snapshot.game.endedAt)}
+          {results?.endedAt ? dateTimeText(results.endedAt) : clockTime(results?.endedAt ?? snapshot.game.startedAt)}
         </p>
       </div>
 

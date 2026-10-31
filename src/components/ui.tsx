@@ -40,7 +40,7 @@ export function TextInput({
   maxLength?: number;
   id?: string;
   inputMode?: 'text' | 'numeric' | 'decimal';
-  autoCapitalize?: 'none' | 'characters' | 'sentences';
+  autoCapitalize?: 'none' | 'characters' | 'sentences' | 'words';
   spellCheck?: boolean;
   disabled?: boolean;
 }) {
