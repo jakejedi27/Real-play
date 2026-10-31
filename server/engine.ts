@@ -215,7 +215,6 @@ export function prepareStart(game: GameRecord, now: number): EngineResult {
         if (first) competitor.deadlines[first.id] = now + settingsS.objectiveTimeLimitSeconds * 1000;
       }
     }
-    void key_unused;
   }
 
   result.events.push({
@@ -230,8 +229,6 @@ export function prepareStart(game: GameRecord, now: number): EngineResult {
   });
   return result;
 }
-
-let key_unused: unknown;
 
 /** Called when the countdown elapses: flips the authoritative clock on. */
 export function activateAfterCountdown(game: GameRecord, now: number): EngineResult {
