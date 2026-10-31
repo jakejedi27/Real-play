@@ -68,6 +68,7 @@ export class SqliteStore implements Store {
         is_host INTEGER NOT NULL DEFAULT 0,
         ready INTEGER NOT NULL DEFAULT 0,
         consent_location INTEGER NOT NULL DEFAULT 0,
+        account_id TEXT,
         last_seen_at INTEGER NOT NULL,
         created_at INTEGER NOT NULL
       );
@@ -422,6 +423,192 @@ export class SqliteStore implements Store {
          WHERE game_id=? AND status='pending' AND kind IN (${placeholders})`,
       )
       .run(gameId, ...kinds);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Accounts, sessions and password resets                              */
+  /* ------------------------------------------------------------------ */
+
+  async createAccount(account: AccountRecord): Promise<void> {
+    this.d
+      .prepare(
+        `INSERT INTO accounts (id, email, email_lower, username, username_lower, display_name,
+          avatar_url, password_hash, created_at, updated_at)
+         VALUES (@id, @email, @email_lower, @username, @username_lower, @display_name,
+          @avatar_url, @password_hash, @created_at, @updated_at)`,
+      )
+      .run(accountRow(account));
+  }
+
+  async getAccount(id: string): Promise<AccountRecord | null> {
+    const row = this.d.prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Row | undefined;
+    return row ? mapAccount(row) : null;
+  }
+
+  async getAccountByEmail(emailLower: string): Promise<AccountRecord | null> {
+    const row = this.d
+      .prepare('SELECT * FROM accounts WHERE email_lower = ?')
+      .get(emailLower) as Row | undefined;
+    return row ? mapAccount(row) : null;
+  }
+
+  async getAccountByUsername(usernameLower: string): Promise<AccountRecord | null> {
+    const row = this.d
+      .prepare('SELECT * FROM accounts WHERE username_lower = ?')
+      .get(usernameLower) as Row | undefined;
+    return row ? mapAccount(row) : null;
+  }
+
+  async updateAccount(account: AccountRecord): Promise<void> {
+    this.d
+      .prepare(
+        `UPDATE accounts SET email=@email, email_lower=@email_lower, username=@username,
+          username_lower=@username_lower, display_name=@display_name, avatar_url=@avatar_url,
+          password_hash=@password_hash, updated_at=@updated_at
+         WHERE id=@id`,
+      )
+      .run(accountRow(account));
+  }
+
+  async createSession(session: SessionRecord): Promise<void> {
+    this.d
+      .prepare(
+        `INSERT INTO account_sessions (id, account_id, token_hash, created_at, expires_at, last_seen_at)
+         VALUES (@id, @account_id, @token_hash, @created_at, @expires_at, @last_seen_at)`,
+      )
+      .run(sessionRow(session));
+  }
+
+  async getSessionByTokenHash(tokenHash: string): Promise<SessionRecord | null> {
+    const row = this.d
+      .prepare('SELECT * FROM account_sessions WHERE token_hash = ?')
+      .get(tokenHash) as Row | undefined;
+    return row ? mapSession(row) : null;
+  }
+
+  async touchSession(id: string, lastSeenAt: number): Promise<void> {
+    this.d.prepare('UPDATE account_sessions SET last_seen_at = ? WHERE id = ?').run(lastSeenAt, id);
+  }
+
+  async deleteSession(id: string): Promise<void> {
+    this.d.prepare('DELETE FROM account_sessions WHERE id = ?').run(id);
+  }
+
+  async deleteAccountSessions(accountId: string): Promise<void> {
+    this.d.prepare('DELETE FROM account_sessions WHERE account_id = ?').run(accountId);
+  }
+
+  async createPasswordReset(reset: PasswordResetRecord): Promise<void> {
+    this.d
+      .prepare(
+        `INSERT INTO password_resets (id, account_id, token_hash, created_at, expires_at, used_at)
+         VALUES (@id, @account_id, @token_hash, @created_at, @expires_at, @used_at)`,
+      )
+      .run(resetRow(reset));
+  }
+
+  async getPasswordResetByTokenHash(tokenHash: string): Promise<PasswordResetRecord | null> {
+    const row = this.d
+      .prepare('SELECT * FROM password_resets WHERE token_hash = ?')
+      .get(tokenHash) as Row | undefined;
+    return row ? mapReset(row) : null;
+  }
+
+  async markPasswordResetUsed(id: string, usedAt: number): Promise<void> {
+    this.d.prepare('UPDATE password_resets SET used_at = ? WHERE id = ?').run(usedAt, id);
+  }
+
+  async deleteExpiredPasswordResets(before: number): Promise<void> {
+    this.d.prepare('DELETE FROM password_resets WHERE expires_at < ?').run(before);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Results, friends and invites                                        */
+  /* ------------------------------------------------------------------ */
+
+  async recordGameResult(result: GameResultRecord): Promise<boolean> {
+    const insert = this.d
+      .prepare(
+        `INSERT OR IGNORE INTO game_results (id, game_id, account_id, player_id, mode, game_name,
+          game_code, player_count, outcome, ended_at, recorded_at)
+         VALUES (@id, @game_id, @account_id, @player_id, @mode, @game_name, @game_code,
+          @player_count, @outcome, @ended_at, @recorded_at)`,
+      )
+      .run(resultRow(result));
+    return insert.changes > 0;
+  }
+
+  async listGameResults(accountId: string, limit: number): Promise<GameResultRecord[]> {
+    const rows = this.d
+      .prepare('SELECT * FROM game_results WHERE account_id = ? ORDER BY ended_at DESC LIMIT ?')
+      .all(accountId, limit) as Row[];
+    return rows.map(mapResult);
+  }
+
+  async createFriendship(friendship: FriendshipRecord): Promise<boolean> {
+    const insert = this.d
+      .prepare(
+        `INSERT OR IGNORE INTO friendships (id, requester_id, addressee_id, status, created_at, responded_at)
+         VALUES (@id, @requester_id, @addressee_id, @status, @created_at, @responded_at)`,
+      )
+      .run(friendshipRow(friendship));
+    return insert.changes > 0;
+  }
+
+  async getFriendship(a: string, b: string): Promise<FriendshipRecord | null> {
+    const row = this.d
+      .prepare(
+        `SELECT * FROM friendships
+         WHERE (requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?)
+         LIMIT 1`,
+      )
+      .get(a, b, b, a) as Row | undefined;
+    return row ? mapFriendship(row) : null;
+  }
+
+  async getFriendshipById(id: string): Promise<FriendshipRecord | null> {
+    const row = this.d.prepare('SELECT * FROM friendships WHERE id = ?').get(id) as Row | undefined;
+    return row ? mapFriendship(row) : null;
+  }
+
+  async updateFriendship(friendship: FriendshipRecord): Promise<void> {
+    this.d
+      .prepare('UPDATE friendships SET status = ?, responded_at = ? WHERE id = ?')
+      .run(friendship.status, friendship.respondedAt, friendship.id);
+  }
+
+  async deleteFriendship(id: string): Promise<void> {
+    this.d.prepare('DELETE FROM friendships WHERE id = ?').run(id);
+  }
+
+  async listFriendships(accountId: string): Promise<FriendshipRecord[]> {
+    const rows = this.d
+      .prepare(
+        'SELECT * FROM friendships WHERE requester_id = ? OR addressee_id = ? ORDER BY created_at DESC',
+      )
+      .all(accountId, accountId) as Row[];
+    return rows.map(mapFriendship);
+  }
+
+  async createGameInvite(invite: GameInviteRecord): Promise<void> {
+    this.d
+      .prepare(
+        `INSERT OR REPLACE INTO game_invites (id, from_account_id, to_account_id, game_id, code,
+          game_name, mode, created_at)
+         VALUES (@id, @from_account_id, @to_account_id, @game_id, @code, @game_name, @mode, @created_at)`,
+      )
+      .run(inviteRow(invite));
+  }
+
+  async listGameInvites(toAccountId: string): Promise<GameInviteRecord[]> {
+    const rows = this.d
+      .prepare('SELECT * FROM game_invites WHERE to_account_id = ? ORDER BY created_at DESC LIMIT 50')
+      .all(toAccountId) as Row[];
+    return rows.map(mapInvite);
+  }
+
+  async deleteGameInvite(id: string, toAccountId: string): Promise<void> {
+    this.d.prepare('DELETE FROM game_invites WHERE id = ? AND to_account_id = ?').run(id, toAccountId);
   }
 }
 
