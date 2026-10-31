@@ -83,7 +83,7 @@ export function LiveGame({ snapshot }: { snapshot: GameSnapshot }) {
           lng: team.base.lng,
           label: team.name,
           sublabel: `${team.score} pts`,
-          fill: team.color,
+          color: team.color,
         });
       }
     }
@@ -97,7 +97,7 @@ export function LiveGame({ snapshot }: { snapshot: GameSnapshot }) {
         lng: zone.lng,
         label: zone.name,
         sublabel: owner ? owner.name : 'Neutral',
-        fill: owner?.color ?? '#7d8f87',
+        color: owner?.color ?? '#7d8f87',
       });
     }
   }
@@ -110,7 +110,7 @@ export function LiveGame({ snapshot }: { snapshot: GameSnapshot }) {
         lng: objective.lng,
         label: String(objective.index + 1),
         sublabel: objective.completed ? 'Done' : objective.title,
-        fill: objective.completed ? '#4d7c3a' : meta.accent,
+        color: objective.completed ? '#4d7c3a' : meta.accent,
       });
     }
   }
@@ -125,8 +125,8 @@ export function LiveGame({ snapshot }: { snapshot: GameSnapshot }) {
         location.source === 'revealed'
           ? `Reveal · ${ageText(location.ageSeconds)} old · ${accuracyText(location.accuracyMeters)}`
           : `${accuracyText(location.accuracyMeters)} · ${ageText(location.ageSeconds)} old`,
-      fill: location.playerId === you.id ? '#ffffff' : team?.color ?? '#c9d6ce',
-      ghost: location.source === 'revealed' || location.stale,
+      color: location.playerId === you.id ? '#ffffff' : team?.color ?? '#c9d6ce',
+      fill: location.source === 'live' && !location.stale,
     });
   }
 
