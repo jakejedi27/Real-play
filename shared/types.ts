@@ -271,6 +271,7 @@ export interface JobRecord {
   attempts: number;
   payload: Record<string, unknown>;
   createdAt: number;
+  claimedAt: number | null;
 }
 
 /* ------------------------------------------------------------------ */
