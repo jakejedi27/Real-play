@@ -1,4 +1,4 @@
-import type { LatLng, PlayArea } from '../types';
+import type { LatLng, PlayArea } from './types';
 
 const EARTH_RADIUS_M = 6371008.8;
 
