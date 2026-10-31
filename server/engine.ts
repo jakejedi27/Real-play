@@ -389,13 +389,6 @@ function hasOvertimeExpired(game: GameRecord): boolean {
   return game.endedReason === 'overtime';
 }
 
-function playersInTeam(game: GameRecord, teamKey: string): PlayerRecord[] {
-  void game;
-  return cachedPlayers.filter((p) => p.teamKey === teamKey);
-}
-
-let cachedPlayers: PlayerRecord[] = [];
-
 /* ------------------------------------------------------------------ */
 /* Manhunt                                                             */
 /* ------------------------------------------------------------------ */
@@ -585,8 +578,7 @@ function tickCtf(
       const candidates = players
         .filter((p) => p.teamKey && p.teamKey !== teamConfig.key && alive(p))
         .map((p) => ({ player: p, location: freshLocation(settings, locations.get(p.id), now) }))
-        .filter((entry) => entry.location && isNear(settings, entry.location, flag.lat, flag.lng, now, pickupRadius))
-        .sort((a, b) => (a.location?.recordedAtWeird ?? 0) - (b.location?.recordedAtWeird ?? 0));
+        .filter((entry) => entry.location && isNear(settings, entry.location, flag.lat, flag.lng, now, pickupRadius));
       const taker = candidates[0];
       if (taker?.location) {
         flag.status = 'carried';
