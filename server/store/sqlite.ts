@@ -10,6 +10,14 @@ import type {
   StoredLocation,
 } from '../../shared/types';
 import type { EventInsertResult, Store } from '../store';
+import type {
+  AccountRecord,
+  FriendshipRecord,
+  GameInviteRecord,
+  GameResultRecord,
+  PasswordResetRecord,
+  SessionRecord,
+} from '../../shared/accounts';
 
 type Row = Record<string, unknown>;
 
@@ -670,6 +678,7 @@ function playerRow(p: PlayerRecord) {
     is_host: p.isHost ? 1 : 0,
     ready: p.ready ? 1 : 0,
     consent_location: p.consentLocation ? 1 : 0,
+    account_id: p.accountId,
     last_seen_at: p.lastSeenAt,
     created_at: p.createdAt,
   };
@@ -685,6 +694,7 @@ function mapPlayer(row: Row): PlayerRecord {
     isHost: Boolean(row.is_host),
     ready: Boolean(row.ready),
     consentLocation: Boolean(row.consent_location),
+    accountId: (row.account_id as string | null) ?? null,
     lastSeenAt: row.last_seen_at as number,
     createdAt: row.created_at as number,
   };
