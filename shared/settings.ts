@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { distanceMeters } from './geo';
 import type {
   CtfSettings,
   CommonSettings,
@@ -144,7 +145,7 @@ const scavengerSchema = commonSchema.extend({
   objectives: z.array(objectiveSchema).min(1).max(LIMITS.maxObjectives),
 });
 
-export const modeSettingsSchemas: Record<ModeId, z.ZodType<ModeSettings>> = {
+export const modeSettingsSchemas: Record<ModeId, z.ZodTypeAny> = {
   manhunt: manhuntSchema,
   ctf: ctfSchema,
   territory: territorySchema,
@@ -353,11 +354,10 @@ export function validateSettings(settings: ModeSettings): { errors: string[]; wa
       if (settings.zones.length === 0) errors.push('Add at least one capture zone.');
       const ids = new Set<string>();
       for (const zone of settings.zones) {
-        if (ids.has(zone.id)) errors.push('Zone ids must are duplicated.');
+        if (ids.has(zone.id)) errors.push('Zone ids must be unique.');
         ids.add(zone.id);
         if (settings.area.enabled && settings.area.center) {
           // Warn rather than reject: hosts may deliberately place a zone near the edge.
-          const { distanceMeters } = requireGeo();
           if (
             distanceMeters({ lat: zone.lat, lng: zone.lng }, settings.area.center) + zone.radiusMeters >
             settings.area.radiusMeters
@@ -372,9 +372,6 @@ export function validateSettings(settings: ModeSettings): { errors: string[]; wa
           if (!settings.teams.some((t) => t.key === key)) {
             errors.push(`Zone ${zone.name} lists an unknown team.`);
           }
-        }
-        if (zone.radiusMeters < settings.area.radiusMeters * 0.03) {
-          // no-op guard for nonsensical comparisons
         }
       }
       if (settings.scoreLimit > 0) {
@@ -404,7 +401,6 @@ export function validateSettings(settings: ModeSettings): { errors: string[]; wa
           warnings.push(`Objective "${objective.title}" uses a code and ignores its map point.`);
         }
         if (settings.area.enabled && settings.area.center && objective.lat != null && objective.lng != null) {
-          const { distanceMeters } = requireGeo();
           if (
             distanceMeters({ lat: objective.lat, lng: objective.lng }, settings.area.center) >
             settings.area.radiusMeters + 100
@@ -424,11 +420,6 @@ export function validateSettings(settings: ModeSettings): { errors: string[]; wa
   }
 
   return { errors, warnings };
-}
-
-function requireGeo() {
-  // Kept lazy to avoid a cycle with the geo module at import time.
-  return require('./geo') as typeof import('./geo');
 }
 
 /** Settings safe to send to every participant (no hidden answers or future objectives). */
