@@ -221,7 +221,7 @@ export class SupabaseStore implements Store {
   }
 
   async listEvents(gameId: string, sinceSeq: number, limit: number): Promise<GameEventRecord[]> {
-    const { data, error }n = await this.client
+    const { data, error } = await this.client
       .from('events')
       .select('*')
       .eq('game_id', gameId)

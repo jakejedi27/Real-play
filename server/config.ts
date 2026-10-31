@@ -19,8 +19,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   };
 }
 
-export function createStore(env: NodeJS.ProcessEnv = process.env, dataDir = './data'): Store {
+export function createStore(env: NodeJS.ProcessEnv = process.env, dataDir?: string): Store {
   const kind = (env.DATA_STORE ?? 'sqlite').toLowerCase();
+  const dir = dataDir ?? env.DATA_DIR ?? path.join(process.cwd(), 'data');
   if (kind === 'supabase') {
     const url = env.SUPABASE_URL ?? '';
     const key = env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -29,5 +30,5 @@ export function createStore(env: NodeJS.ProcessEnv = process.env, dataDir = './d
   if (kind !== 'sqlite') {
     throw new Error(`Unknown DATA_STORE "${kind}" (expected sqlite or supabase)`);
   }
-  return new SqliteStore(path.resolve(dataDir, 'realplay.db'));
+  return new SqliteStore(path.resolve(dir, 'realplay.db'));
 }
