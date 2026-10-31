@@ -8,6 +8,14 @@ import type {
   StoredLocation,
 } from '../../shared/types';
 import type { EventInsertResult, Store } from '../store';
+import type {
+  AccountRecord,
+  FriendshipRecord,
+  GameInviteRecord,
+  GameResultRecord,
+  PasswordResetRecord,
+  SessionRecord,
+} from '../../shared/accounts';
 
 type Row = Record<string, unknown>;
 
