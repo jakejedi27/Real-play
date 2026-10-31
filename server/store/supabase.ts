@@ -667,3 +667,161 @@ function mapJob(row: Row): JobRecord {
     claimedAt: row.claimed_at == null ? null : Number(row.claimed_at),
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Account-related row mappers                                         */
+/* ------------------------------------------------------------------ */
+
+function accountRow(a: AccountRecord) {
+  return {
+    id: a.id,
+    email: a.email,
+    email_lower: a.emailLower,
+    username: a.username,
+    username_lower: a.usernameLower,
+    display_name: a.displayName,
+    avatar_url: a.avatarUrl,
+    password_hash: a.passwordHash,
+    created_at: a.createdAt,
+    updated_at: a.updatedAt,
+  };
+}
+
+function mapAccount(row: Row): AccountRecord {
+  return {
+    id: row.id as string,
+    email: row.email as string,
+    emailLower: row.email_lower as string,
+    username: row.username as string,
+    usernameLower: row.username_lower as string,
+    displayName: row.display_name as string,
+    avatarUrl: (row.avatar_url as string | null) ?? null,
+    passwordHash: row.password_hash as string,
+    createdAt: row.created_at as number,
+    updatedAt: row.updated_at as number,
+  };
+}
+
+function sessionRow(s: SessionRecord) {
+  return {
+    id: s.id,
+    account_id: s.accountId,
+    token_hash: s.tokenHash,
+    created_at: s.createdAt,
+    expires_at: s.expiresAt,
+    last_seen_at: s.lastSeenAt,
+  };
+}
+
+function mapSession(row: Row): SessionRecord {
+  return {
+    id: row.id as string,
+    accountId: row.account_id as string,
+    tokenHash: row.token_hash as string,
+    createdAt: row.created_at as number,
+    expiresAt: row.expires_at as number,
+    lastSeenAt: row.last_seen_at as number,
+  };
+}
+
+function resetRow(r: PasswordResetRecord) {
+  return {
+    id: r.id,
+    account_id: r.accountId,
+    token_hash: r.tokenHash,
+    created_at: r.createdAt,
+    expires_at: r.expiresAt,
+    used_at: r.usedAt,
+  };
+}
+
+function mapReset(row: Row): PasswordResetRecord {
+  return {
+    id: row.id as string,
+    accountId: row.account_id as string,
+    tokenHash: row.token_hash as string,
+    createdAt: row.created_at as number,
+    expiresAt: row.expires_at as number,
+    usedAt: (row.used_at as number | null) ?? null,
+  };
+}
+
+function resultRow(r: GameResultRecord) {
+  return {
+    id: r.id,
+    game_id: r.gameId,
+    account_id: r.accountId,
+    player_id: r.playerId,
+    mode: r.mode,
+    game_name: r.gameName,
+    game_code: r.gameCode,
+    player_count: r.playerCount,
+    outcome: r.outcome,
+    ended_at: r.endedAt,
+    recorded_at: r.recordedAt,
+  };
+}
+
+function mapResult(row: Row): GameResultRecord {
+  return {
+    id: row.id as string,
+    gameId: row.game_id as string,
+    accountId: row.account_id as string,
+    playerId: row.player_id as string,
+    mode: row.mode as GameResultRecord['mode'],
+    gameName: row.game_name as string,
+    gameCode: row.game_code as string,
+    playerCount: row.player_count as number,
+    outcome: row.outcome as GameResultRecord['outcome'],
+    endedAt: row.ended_at as number,
+    recordedAt: row.recorded_at as number,
+  };
+}
+
+function friendshipRow(f: FriendshipRecord) {
+  return {
+    id: f.id,
+    requester_id: f.requesterId,
+    addressee_id: f.addresseeId,
+    status: f.status,
+    created_at: f.createdAt,
+    responded_at: f.respondedAt,
+  };
+}
+
+function mapFriendship(row: Row): FriendshipRecord {
+  return {
+    id: row.id as string,
+    requesterId: row.requester_id as string,
+    addresseeId: row.addressee_id as string,
+    status: row.status as FriendshipRecord['status'],
+    createdAt: row.created_at as number,
+    respondedAt: (row.responded_at as number | null) ?? null,
+  };
+}
+
+function inviteRow(i: GameInviteRecord) {
+  return {
+    id: i.id,
+    from_account_id: i.fromAccountId,
+    to_account_id: i.toAccountId,
+    game_id: i.gameId,
+    code: i.code,
+    game_name: i.gameName,
+    mode: i.mode,
+    created_at: i.createdAt,
+  };
+}
+
+function mapInvite(row: Row): GameInviteRecord {
+  return {
+    id: row.id as string,
+    fromAccountId: row.from_account_id as string,
+    toAccountId: row.to_account_id as string,
+    gameId: row.game_id as string,
+    code: row.code as string,
+    gameName: row.game_name as string,
+    mode: row.mode as GameInviteRecord['mode'],
+    createdAt: row.created_at as number,
+  };
+}
