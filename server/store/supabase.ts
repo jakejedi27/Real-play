@@ -307,6 +307,229 @@ export class SupabaseStore implements Store {
       .in('kind', kinds);
     if (error) throw new Error(`cancelPendingJobs failed: ${error.message}`);
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Accounts, sessions and password resets                              */
+  /* ------------------------------------------------------------------ */
+
+  async createAccount(account: AccountRecord): Promise<void> {
+    const { error } = await this.client.from('accounts').insert(accountRow(account));
+    if (error) throw new Error(`createAccount failed: ${error.message}`);
+  }
+
+  async getAccount(id: string): Promise<AccountRecord | null> {
+    const { data, error } = await this.client
+      .from('accounts')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new Error(`getAccount failed: ${error.message}`);
+    return data ? mapAccount(data as Row) : null;
+  }
+
+  async getAccountByEmail(emailLower: string): Promise<AccountRecord | null> {
+    const { data, error } = await this.client
+      .from('accounts')
+      .select('*')
+      .eq('email_lower', emailLower)
+      .maybeSingle();
+    if (error) throw new Error(`getAccountByEmail failed: ${error.message}`);
+    return data ? mapAccount(data as Row) : null;
+  }
+
+  async getAccountByUsername(usernameLower: string): Promise<AccountRecord | null> {
+    const { data, error } = await this.client
+      .from('accounts')
+      .select('*')
+      .eq('username_lower', usernameLower)
+      .maybeSingle();
+    if (error) throw new Error(`getAccountByUsername failed: ${error.message}`);
+    return data ? mapAccount(data as Row) : null;
+  }
+
+  async updateAccount(account: AccountRecord): Promise<void> {
+    const { error } = await this.client
+      .from('accounts')
+      .update(accountRow(account))
+      .eq('id', account.id);
+    if (error) throw new Error(`updateAccount failed: ${error.message}`);
+  }
+
+  async createSession(session: SessionRecord): Promise<void> {
+    const { error } = await this.client.from('account_sessions').insert(sessionRow(session));
+    if (error) throw new Error(`createSession failed: ${error.message}`);
+  }
+
+  async getSessionByTokenHash(tokenHash: string): Promise<SessionRecord | null> {
+    const { data, error } = await this.client
+      .from('account_sessions')
+      .select('*')
+      .eq('token_hash', tokenHash)
+      .maybeSingle();
+    if (error) throw new Error(`getSessionByTokenHash failed: ${error.message}`);
+    return data ? mapSession(data as Row) : null;
+  }
+
+  async touchSession(id: string, lastSeenAt: number): Promise<void> {
+    const { error } = await this.client
+      .from('account_sessions')
+      .update({ last_seen_at: lastSeenAt })
+      .eq('id', id);
+    if (error) throw new Error(`touchSession failed: ${error.message}`);
+  }
+
+  async deleteSession(id: string): Promise<void> {
+    const { error } = await this.client.from('account_sessions').delete().eq('id', id);
+    if (error) throw new Error(`deleteSession failed: ${error.message}`);
+  }
+
+  async deleteAccountSessions(accountId: string): Promise<void> {
+    const { error } = await this.client
+      .from('account_sessions')
+      .delete()
+      .eq('account_id', accountId);
+    if (error) throw new Error(`deleteAccountSessions failed: ${error.message}`);
+  }
+
+  async createPasswordReset(reset: PasswordResetRecord): Promise<void> {
+    const { error } = await this.client.from('password_resets').insert(resetRow(reset));
+    if (error) throw new Error(`createPasswordReset failed: ${error.message}`);
+  }
+
+  async getPasswordResetByTokenHash(tokenHash: string): Promise<PasswordResetRecord | null> {
+    const { data, error } = await this.client
+      .from('password_resets')
+      .select('*')
+      .eq('token_hash', tokenHash)
+      .maybeSingle();
+    if (error) throw new Error(`getPasswordResetByTokenHash failed: ${error.message}`);
+    return data ? mapReset(data as Row) : null;
+  }
+
+  async markPasswordResetUsed(id: string, usedAt: number): Promise<void> {
+    const { error } = await this.client
+      .from('password_resets')
+      .update({ used_at: usedAt })
+      .eq('id', id);
+    if (error) throw new Error(`markPasswordResetUsed failed: ${error.message}`);
+  }
+
+  async deleteExpiredPasswordResets(before: number): Promise<void> {
+    const { error } = await this.client.from('password_resets').delete().lt('expires_at', before);
+    if (error) throw new Error(`deleteExpiredPasswordResets failed: ${error.message}`);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Results, friends and invites                                        */
+  /* ------------------------------------------------------------------ */
+
+  async recordGameResult(result: GameResultRecord): Promise<boolean> {
+    const { error, count } = await this.client
+      .from('game_results')
+      .upsert(resultRow(result), {
+        onConflict: 'game_id,account_id',
+        ignoreDuplicates: true,
+        count: 'exact',
+      });
+    if (error) throw new Error(`recordGameResult failed: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
+
+  async listGameResults(accountId: string, limit: number): Promise<GameResultRecord[]> {
+    const { data, error } = await this.client
+      .from('game_results')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('ended_at', { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(`listGameResults failed: ${error.message}`);
+    return (data ?? []).map((row) => mapResult(row as Row));
+  }
+
+  async createFriendship(friendship: FriendshipRecord): Promise<boolean> {
+    const { error, count } = await this.client
+      .from('friendships')
+      .upsert(friendshipRow(friendship), {
+        onConflict: 'requester_id,addressee_id',
+        ignoreDuplicates: true,
+        count: 'exact',
+      });
+    if (error) throw new Error(`createFriendship failed: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
+
+  async getFriendship(a: string, b: string): Promise<FriendshipRecord | null> {
+    const { data, error } = await this.client
+      .from('friendships')
+      .select('*')
+      .or(
+        `and(requester_id.eq.${a},addressee_id.eq.${b}),and(requester_id.eq.${b},addressee_id.eq.${a})`,
+      )
+      .limit(1);
+    if (error) throw new Error(`getFriendship failed: ${error.message}`);
+    const rows = (data ?? []) as Row[];
+    return rows.length ? mapFriendship(rows[0]) : null;
+  }
+
+  async getFriendshipById(id: string): Promise<FriendshipRecord | null> {
+    const { data, error } = await this.client
+      .from('friendships')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new Error(`getFriendshipById failed: ${error.message}`);
+    return data ? mapFriendship(data as Row) : null;
+  }
+
+  async updateFriendship(friendship: FriendshipRecord): Promise<void> {
+    const { error } = await this.client
+      .from('friendships')
+      .update({ status: friendship.status, responded_at: friendship.respondedAt })
+      .eq('id', friendship.id);
+    if (error) throw new Error(`updateFriendship failed: ${error.message}`);
+  }
+
+  async deleteFriendship(id: string): Promise<void> {
+    const { error } = await this.client.from('friendships').delete().eq('id', id);
+    if (error) throw new Error(`deleteFriendship failed: ${error.message}`);
+  }
+
+  async listFriendships(accountId: string): Promise<FriendshipRecord[]> {
+    const { data, error } = await this.client
+      .from('friendships')
+      .select('*')
+      .or(`requester_id.eq.${accountId},addressee_id.eq.${accountId}`)
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(`listFriendships failed: ${error.message}`);
+    return (data ?? []).map((row) => mapFriendship(row as Row));
+  }
+
+  async createGameInvite(invite: GameInviteRecord): Promise<void> {
+    const { error } = await this.client.from('game_invites').upsert(inviteRow(invite), {
+      onConflict: 'id',
+    });
+    if (error) throw new Error(`createGameInvite failed: ${error.message}`);
+  }
+
+  async listGameInvites(toAccountId: string): Promise<GameInviteRecord[]> {
+    const { data, error } = await this.client
+      .from('game_invites')
+      .select('*')
+      .eq('to_account_id', toAccountId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw new Error(`listGameInvites failed: ${error.message}`);
+    return (data ?? []).map((row) => mapInvite(row as Row));
+  }
+
+  async deleteGameInvite(id: string, toAccountId: string): Promise<void> {
+    const { error } = await this.client
+      .from('game_invites')
+      .delete()
+      .eq('id', id)
+      .eq('to_account_id', toAccountId);
+    if (error) throw new Error(`deleteGameInvite failed: ${error.message}`);
+  }
 }
 
 function gameRow(g: GameRecord) {
