@@ -60,6 +60,16 @@ export function teamOf(player: PlayerRecord) {
   return player.teamKey;
 }
 
+/**
+ * Authoritative end of the match clock. Pausing shifts the deadline forward, so
+ * paused time never counts against the configured duration.
+ */
+export function gameEndsAt(game: GameRecord, now: number): number | null {
+  if (!game.startedAt) return game.countdownEndsAt;
+  const pausedFor = game.status === 'paused' && game.pausedAt ? Math.max(0, now - game.pausedAt) : 0;
+  return game.startedAt + game.durationMs + game.accumulatedPauseMs + pausedFor;
+}
+
 /* ------------------------------------------------------------------ */
 /* Runtime bootstrap                                                   */
 /* ------------------------------------------------------------------ */
