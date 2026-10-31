@@ -182,7 +182,7 @@ export function prepareStart(game: GameRecord, now: number): EngineResult {
       headStartEndsAt,
       reveals: [],
     };
-    const durationEnd = game.startedAt! + game.durationMs;
+    const durationEnd = gameEndsAt(game, now) ?? game.startedAt! + game.durationMs;
     let revealAt = game.runtime.manhunt.nextRevealAt!;
     while (revealAt < durationEnd) {
       result.jobs.push({
@@ -282,8 +282,8 @@ export function tick(game: GameRecord, players: PlayerRecord[], locations: Locat
   }
 
   if (!result.finished) {
-    const timerEnd = (game.startedAt ?? now) + game.durationMs;
-    if (now >= timerEnd) {
+    const timerEnd = gameEndsAt(game, now);
+    if (timerEnd != null && now >= timerEnd) {
       applyExpiry(game, players, now, result);
     }
   }
@@ -497,7 +497,7 @@ export function performReveal(
   state.revealIndex = revealIndex;
   const intervalMs = settings.revealIntervalSeconds * 1000;
   const next = state.nextRevealAt + intervalMs;
-  const endsAt = (game.startedAt ?? now) + game.durationMs;
+  const endsAt = gameEndsAt(game, now) ?? now + intervalMs;
   state.nextRevealAt = next < endsAt ? next : null;
   result.changed = true;
   result.events.push({
