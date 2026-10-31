@@ -115,7 +115,92 @@ export class SqliteStore implements Store {
         claimed_at INTEGER
       );
       CREATE INDEX IF NOT EXISTS idx_jobs_due ON jobs(status, run_at);
+
+      /* ---------------- Accounts, sessions and profiles ---------------- */
+
+      CREATE TABLE IF NOT EXISTS accounts (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        email_lower TEXT NOT NULL UNIQUE,
+        username TEXT NOT NULL,
+        username_lower TEXT NOT NULL UNIQUE,
+        display_name TEXT NOT NULL,
+        avatar_url TEXT,
+        password_hash TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS account_sessions (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL UNIQUE,
+        created_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        last_seen_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sessions_account ON account_sessions(account_id);
+
+      CREATE TABLE IF NOT EXISTS password_resets (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL UNIQUE,
+        created_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        used_at INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_resets_account ON password_resets(account_id);
+
+      /* Results are written once per (game, account) from server state only. */
+      CREATE TABLE IF NOT EXISTS game_results (
+        id TEXT PRIMARY KEY,
+        game_id TEXT NOT NULL,
+        account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        player_id TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        game_name TEXT NOT NULL,
+        game_code TEXT NOT NULL,
+        player_count INTEGER NOT NULL,
+        outcome TEXT NOT NULL,
+        ended_at INTEGER NOT NULL,
+        recorded_at INTEGER NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_results_game_account
+        ON game_results(game_id, account_id);
+      CREATE INDEX IF NOT EXISTS idx_results_account ON game_results(account_id, ended_at);
+
+      CREATE TABLE IF NOT EXISTS friendships (
+        id TEXT PRIMARY KEY,
+        requester_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        addressee_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        status TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        responded_at INTEGER
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_friendship_pair
+        ON friendships(requester_id, addressee_id);
+      CREATE INDEX IF NOT EXISTS idx_friendship_addressee ON friendships(addressee_id);
+
+      CREATE TABLE IF NOT EXISTS game_invites (
+        id TEXT PRIMARY KEY,
+        from_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        to_account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        game_id TEXT NOT NULL,
+        code TEXT NOT NULL,
+        game_name TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_invites_to ON game_invites(to_account_id, created_at);
     `);
+
+    // Older databases predate account-scoped players; add the column in place.
+    const playerColumns = db.prepare('PRAGMA table_info(players)').all() as { name: string }[];
+    if (!playerColumns.some((column) => column.name === 'account_id')) {
+      db.exec('ALTER TABLE players ADD COLUMN account_id TEXT');
+    }
+    db.exec('CREATE INDEX IF NOT EXISTS idx_players_account ON players(account_id)');
+
     this.db = db;
   }
 
