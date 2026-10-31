@@ -1,5 +1,6 @@
 import { distanceMeters, isInsideArea, isValidLatLng } from '../shared/geo';
 import type {
+  CompetitorRuntime,
   CtfSettings,
   GameRecord,
   ManhuntSettings,
@@ -119,11 +120,7 @@ export function initRuntime(game: GameRecord, players: PlayerRecord[]): void {
 
   if (game.settings.mode === 'scavenger') {
     const settings = game.settings;
-    const competitors: GameRecord['runtime']['scavenger'] extends infer S
-      ? S extends { competitors: infer C }
-        ? C
-        : never
-      : never = (runtime.scavenger?.competitors ?? {}) as never;
+    const competitors: Record<string, CompetitorRuntime> = runtime.scavenger?.competitors ?? {};
     runtime.scavenger = {
       competitors,
       order: runtime.scavenger?.order ?? {},
