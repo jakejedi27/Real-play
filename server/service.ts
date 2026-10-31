@@ -468,7 +468,7 @@ export class GameService {
         runAt: job.runAt,
         status: 'pending',
         attempts: 0,
-        payload: job.payload,
+        payload: job.payload ?? {},
         createdAt: now,
         claimedAt: null,
       });
@@ -721,7 +721,9 @@ export class GameService {
       if (game.status === 'ended' || game.status === 'cancelled') fail(409, 'This game is already closed.');
       const now = this.now();
       ctx.apply(engine.tick(game, ctx.players, ctx.locations, now));
-      if (game.status !== 'ended') {
+      // A tick may already have produced a natural finish; otherwise the host's
+      // end-of-match call awards the win to whoever is ahead.
+      if (!game.winner) {
         ctx.apply({
           changed: true,
           events: [],
@@ -732,7 +734,6 @@ export class GameService {
             reason: 'The host ended the match.',
           },
         });
-        finishGame(game, game.runtime.winner as engine.EngineFinished, now);
       }
       ctx.markChanged();
       ctx.apply({

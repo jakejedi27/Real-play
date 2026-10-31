@@ -1019,8 +1019,8 @@ export function boundaryCheck(
 ): EngineEvent | null {
   const area = game.settings.area;
   if (!area.enabled || !area.center || !isValidLatLng(location)) return null;
-  const inside = isInsideArea(area, location);
-  const wasInside = previous ? isInsideArea(area, previous) : null;
+  const inside = isInsideArea(location, area);
+  const wasInside = previous ? isInsideArea(previous, area) : null;
   if (wasInside === inside) return null;
   if (wasInside == null && inside) return null;
   return {
