@@ -128,6 +128,17 @@ export class SupabaseStore implements Store {
     return (data ?? []).map((row) => mapPlayer(row as Row));
   }
 
+  async listPlayersByAccount(accountId: string): Promise<PlayerRecord[]> {
+    const { data, error } = await this.client
+      .from('players')
+      .select('*')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw new Error(`listPlayersByAccount failed: ${error.message}`);
+    return (data ?? []).map((row) => mapPlayer(row as Row));
+  }
+
   async updatePlayer(player: PlayerRecord): Promise<void> {
     const { error } = await this.client
       .from('players')
@@ -137,6 +148,7 @@ export class SupabaseStore implements Store {
         is_host: player.isHost,
         ready: player.ready,
         consent_location: player.consentLocation,
+        account_id: player.accountId,
         last_seen_at: player.lastSeenAt,
       })
       .eq('id', player.id);
@@ -355,6 +367,7 @@ function playerRow(p: PlayerRecord) {
     is_host: p.isHost,
     ready: p.ready,
     consent_location: p.consentLocation,
+    account_id: p.accountId,
     last_seen_at: p.lastSeenAt,
     created_at: p.createdAt,
   };
