@@ -804,11 +804,18 @@ function tickTerritory(
 /* Scavenger Hunt                                                      */
 /* ------------------------------------------------------------------ */
 
-function tickScavenger(game: GameRecord, players: PlayerRecord[], now: number, result: EngineResult): void {
-  void players;
+function tickScavenger(
+  game: GameRecord,
+  players: PlayerRecord[],
+  locations: LocationMap,
+  now: number,
+  result: EngineResult,
+): void {
   const settings = game.settings as ScavengerSettings;
   const state = game.runtime.scavenger;
   if (!state) return;
+
+  scavengerGpsCheck(game, players, locations, now, result);
 
   for (const [key, competitor] of Object.entries(state.competitors)) {
     if (competitor.finishedAt) continue;
