@@ -1,0 +1,48 @@
+{
+  "name": "realplay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RealPlay — customizable real-life multiplayer games (Manhunt, CTF, Territory Control, Scavenger Hunt)",
+  "scripts": {
+    "dev": "concurrently -n server,web -c green,cyan \"tsx watch server/index.ts\" \"vite --host 0.0.0.0\"",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:web": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "start": "tsx server/index.ts",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "node tests/e2e/smoke.mjs"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "@supabase/supabase-js": "^2.47.10",
+    "better-sqlite3": "^11.7.0",
+    "hono": "^4.6.14",
+    "leaflet": "^1.9.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^6.28.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/leaflet": "^1.9.15",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/supertest": "^6.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
