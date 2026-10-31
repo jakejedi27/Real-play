@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type {
   CtfSettings,
   LatLng,
@@ -38,7 +38,7 @@ function teamColor(index: number): string {
 
 export function SettingsEditor({ settings, onChange, compact = false }: EditorProps) {
   const validation = useMemo(() => validateSettings(settings), [settings]);
-  const [recenter, setRecenter] = useRecenter();
+  const [recenterKey, setRecenterKey] = useState(0);
 
   const mapCenter: LatLng | null = settings.area.center;
 
@@ -146,10 +146,6 @@ export function SettingsEditor({ settings, onChange, compact = false }: EditorPr
         <h3 className="card-title">Play area</h3>
         <Toggle
           label="Limit play to a boundary"
-          hint="Players are warned when they leave. Boundaries rely on reported GPS accuracy."
- Toni        />
-        <Toggle
-          label="Limit play to a boundary"
           hint="Players are warned when they leave the circle."
           checked={settings.area.enabled}
           onChange={(checked) =>
@@ -169,7 +165,7 @@ export function SettingsEditor({ settings, onChange, compact = false }: EditorPr
                   center: { lat: fix.lat, lng: fix.lng },
                 },
               });
-              recenter.bump();
+              setRecenterKey((key) => key + 1);
             }}
           />
           <NumberField
@@ -188,7 +184,7 @@ export function SettingsEditor({ settings, onChange, compact = false }: EditorPr
               center={mapCenter}
               zoom={15}
               area={settings.area}
-              recenterKey={recenter.key}
+              recenterKey={recenterKey}
               className="map map-small"
               pins={[{ id: 'centre', lat: mapCenter.lat, lng: mapCenter.lng, label: 'Play area centre', color: '#b6f25a', radius: 7 }]}
             />
@@ -223,19 +219,6 @@ export function SettingsEditor({ settings, onChange, compact = false }: EditorPr
   );
 }
 
-function useRecenter() {
-  const [key, setKey] = useStateNumber(0);
-  return { recenter: { key }, bump: () => setKey((prev) => prev + 1) } as const;
-}
-
-/* Local helper so this module stays a pure function component tree. */
-function useStateNumber(initial: number): [number, (updater: (prev: number) => number) => void] {
-  const [value, setValue] = useStateImpl(initial);
-  return [value, setValue];
-}
-
-import { useState as useStateImpl } from 'react';
-
 function TeamEditor({
   teams,
   maxTeamSize,
@@ -265,7 +248,7 @@ function TeamEditor({
   return (
     <div className="subsection">
       <div className="subsection-head">
-        <spanclassName className="field-label">
+        <span className="field-label">
           Teams
         </span>
         <button
