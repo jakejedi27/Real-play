@@ -19,6 +19,7 @@ export function distanceMeters(a: LatLng, b: LatLng): number {
 
 export function isInsideArea(point: LatLng, area: PlayArea): boolean {
   if (!area.enabled) return true;
+  if (!area.center) return false;
   return distanceMeters(point, area.center) <= area.radiusMeters;
 }
 

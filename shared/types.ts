@@ -20,7 +20,8 @@ export interface LatLng {
 
 export interface PlayArea {
   enabled: boolean;
-  center: LatLng;
+  /** Null until the host picks the play area from a real map/location fix. */
+  center: LatLng | null;
   radiusMeters: number;
 }
 
@@ -42,6 +43,8 @@ export interface CommonSettings {
   staleAfterSeconds: number;
   shareTeamLocations: boolean;
   teamAssignment: TeamAssignmentRule;
+  /** 0 = no per-team size cap. */
+  maxTeamSize: number;
   teams: TeamConfig[];
   safetyAcknowledged: boolean;
 }
