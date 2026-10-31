@@ -72,9 +72,10 @@ export class ServiceError extends Error {
   }
 }
 
-const fail = (status: number, message: string, details: string[] = []): never => {
+/** Declared as a function so TypeScript narrows control flow after it throws. */
+function fail(status: number, message: string, details: string[] = []): never {
   throw new ServiceError(status, message, details);
-};
+}
 
 interface MutateContext {
   game: GameRecord;
