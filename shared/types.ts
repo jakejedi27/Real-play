@@ -164,10 +164,28 @@ export interface CompetitorRuntime {
   points: number;
   completedObjectiveIds: string[];
   hintsUsed: string[];
+  expiredObjectiveIds: string[];
   startedAt: number | null;
   finishedAt: number | null;
   /** Objective id -> ms timestamp when its completion window closes. */
   deadlines: Record<string, number | null>;
+}
+
+export interface RevealRunnerRecord {
+  playerId: string;
+  nickname: string;
+  lat: number;
+  lng: number;
+  accuracyMeters: number;
+  recordedAt: number;
+}
+
+/** Immutable snapshot written when a scheduled Manhunt reveal fires. */
+export interface RevealRecord {
+  revealIndex: number;
+  createdAt: number;
+  runners: RevealRunnerRecord[];
+  missing: { playerId: string; nickname: string; reason: string }[];
 }
 
 export interface GameRuntime {
@@ -177,6 +195,7 @@ export interface GameRuntime {
     revealIndex: number;
     nextRevealAt: number | null;
     headStartEndsAt: number;
+    reveals: RevealRecord[];
   };
   ctf?: {
     lastCaptureAt: Record<string, number>;
